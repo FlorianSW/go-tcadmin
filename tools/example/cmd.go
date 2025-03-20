@@ -28,7 +28,7 @@ func main() {
 		Timeout: 60 * time.Second,
 	}
 
-	c := go_tcadmin.NewClient(hc, "qp.qonzer.com", hllGameId, hllModId, hllFileId, go_tcadmin.Credentials{Username: os.Getenv("USERNAME"), Password: os.Getenv("PASSWORD")})
+	c := tcadmin.NewClient(hc, "qp.qonzer.com", hllGameId, hllModId, hllFileId, tcadmin.Credentials{Username: os.Getenv("USERNAME"), Password: os.Getenv("PASSWORD")})
 
 	si, err := c.ServerInfo(os.Getenv("SERVICE_ID"))
 	if err != nil {
