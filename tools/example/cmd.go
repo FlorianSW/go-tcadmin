@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"os"
+	"time"
 )
 
 const (
@@ -23,6 +24,8 @@ func main() {
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
+		// Choose a relatively high timeout. Requests to restart a service are synchronous and might take a while depending on the game.
+		Timeout: 60 * time.Second,
 	}
 
 	c := tcadmin.NewClient(hc, "qp.qonzer.com", hllGameId, hllModId, hllFileId, tcadmin.Credentials{Username: os.Getenv("USERNAME"), Password: os.Getenv("PASSWORD")})
@@ -37,4 +40,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	pid, err := c.Restart(os.Getenv("SERVICE_ID"))
+	if err != nil {
+		panic(err)
+	}
+	println("new PID", pid)
 }

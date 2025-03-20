@@ -1,6 +1,8 @@
 package tcadmin
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"golang.org/x/net/html"
@@ -11,8 +13,9 @@ import (
 )
 
 const (
-	configUrlTemplate = "https://%s/Aspx/Interface/GameHosting/MvcConfigEditor.aspx?gameid=%s&modid=%s&fileid=%s&serviceid=%s"
-	loginUrlTemplate  = "https://%s/Aspx/Interface/Base/Login.aspx"
+	configUrlTemplate  = "https://%s/Aspx/Interface/GameHosting/MvcConfigEditor.aspx?gameid=%s&modid=%s&fileid=%s&serviceid=%s"
+	loginUrlTemplate   = "https://%s/Aspx/Interface/Base/Login.aspx"
+	restartUrlTemplate = "https://%s/Aspx/Interface/Base/CallBacks/ServiceManager.aspx/Restart"
 
 	homeLocation = "/Aspx/Interface/Base/Home.aspx"
 )
@@ -163,6 +166,44 @@ func (c *client) SetServerInfo(serviceId string, name, pw string) error {
 		return fmt.Errorf("invalid response code, expected 200, got %d with Location %s", res.StatusCode, res.Header.Get("Location"))
 	}
 	return nil
+}
+
+func (c *client) Restart(serviceId string) (string, error) {
+	if err := c.login(); err != nil {
+		return "", err
+	}
+
+	p := map[string]string{
+		"serviceId": serviceId,
+	}
+	b, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	r, err := http.NewRequest(http.MethodPost, fmt.Sprintf(restartUrlTemplate, c.baseUrl), bytes.NewReader(b))
+	if err != nil {
+		return "", err
+	}
+	r.Header.Set("Content-Type", "application/json")
+	res, err := c.hc.Do(r)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("invalid response code, expected 200, got %d", res.StatusCode)
+	}
+	var d struct {
+		D []string `json:"d"`
+	}
+	err = json.NewDecoder(res.Body).Decode(&d)
+	if err != nil {
+		return "", err
+	}
+	if len(d.D) < 4 {
+		return "", nil
+	}
+	return d.D[3], nil
 }
 
 func valueFor(h *html.Node, label string) string {
