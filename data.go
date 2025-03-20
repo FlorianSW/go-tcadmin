@@ -1,4 +1,4 @@
-package tcadmin
+package go_tcadmin
 
 type Credentials struct {
 	Username string
